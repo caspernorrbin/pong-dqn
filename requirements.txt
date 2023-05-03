@@ -1,0 +1,6 @@
+numpy
+matplotlib
+torch
+gymnasium
+gymnasium[atari]
+gymnasium[accept-rom-license]
