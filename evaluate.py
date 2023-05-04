@@ -63,7 +63,7 @@ if __name__ == '__main__':
         env = gym.wrappers.RecordVideo(env, './video/', episode_trigger=lambda episode_id: True)
 
     # Load model from provided path.
-    dqn = torch.load(args.path, map_location=torch.device('cpu'))
+    dqn = torch.load(args.path, map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
     dqn.eval()
 
     mean_return = evaluate_policy(dqn, env, env_config, args, args.n_eval_episodes, render=args.render and not args.save_video, verbose=True)
