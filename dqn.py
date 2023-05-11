@@ -3,7 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda")
 
 
 class ReplayMemory:
@@ -51,10 +52,27 @@ class DQN(nn.Module):
         self.relu = nn.ReLU()
         self.flatten = nn.Flatten()
 
+        self.env = env_config["env_name"]
+        self.conv1 = nn.Conv2d(4, 32, kernel_size=8, stride=4, padding=0)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0)
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0)
+        self.fc1conv = nn.Linear(3136, 512)
+        self.fc2conv = nn.Linear(512, self.n_actions)
+
     def forward(self, x):
         """Runs the forward pass of the NN depending on architecture."""
-        x = self.relu(self.fc1(x))
-        x = self.fc2(x)
+        if self.env == "cartpole":
+            x = self.relu(self.fc1(x))
+            x = self.fc2(x)
+        elif self.env == "pong":
+            x = self.relu(self.conv1(x))
+            x = self.relu(self.conv2(x))
+            x = self.relu(self.conv3(x))
+            x = self.flatten(x)
+            x = self.relu(self.fc1conv(x))
+            x = self.fc2conv(x)
+        else:
+            raise ValueError("Unknown environment: {}".format(self.env))
 
         return x
 
@@ -99,18 +117,28 @@ def optimize(dqn, target_dqn, memory, optimizer):
 
     # obss has shape [batch_size, 1, a_space], actions has shape [batch_size]
     # actions.view instead has shape [batch_size, 1, 1]
-    q_values = torch.gather(dqn.forward(obss), 2, actions.view(-1, 1, 1)).squeeze(2).to(device)
+    # q_values = torch.gather(dqn.forward(
+    #     obss), 2, actions.view(-1, 1, 1)).squeeze(2).to(device)
+
+    q_values = torch.zeros(dqn.batch_size, device=device)
+    for obs, action, i in zip(obss, actions, range(dqn.batch_size)):
+        q_value = dqn.forward(obs)
+        q_values[i] = q_value[0, action]
+
+    q_values = q_values.unsqueeze(1)
 
     # Compute the Q-value targets. Only do this for non-terminal transitions!
     q_value_targets = torch.zeros(dqn.batch_size, device=device)
     for next_obs, reward, i in zip(next_obss, rewards, range(dqn.batch_size)):
 
         if torch.count_nonzero(next_obs) != 0:
-            q_value_targets[i] = reward + dqn.gamma * torch.max(target_dqn.forward(next_obs)).to(device)
+            q_value_targets[i] = reward + dqn.gamma * \
+                torch.max(target_dqn.forward(next_obs)).to(device)
         else:
             q_value_targets[i] = reward
 
-    dqn.current_eps = max([dqn.eps_end, dqn.current_eps - (dqn.eps_start - dqn.eps_end) / dqn.anneal_length])
+    dqn.current_eps = max([dqn.eps_end, dqn.current_eps -
+                          (dqn.eps_start - dqn.eps_end) / dqn.anneal_length])
 
     # Compute loss.
     loss = F.mse_loss(q_values.squeeze(), q_value_targets)

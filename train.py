@@ -8,10 +8,13 @@ from utils import preprocess
 from evaluate import evaluate_policy
 from dqn import DQN, ReplayMemory, optimize
 
+from gymnasium.wrappers import AtariPreprocessing, FrameStack
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--env', choices=['CartPole-v1'], default='CartPole-v1')
+parser.add_argument(
+    '--env', choices=['CartPole-v1', 'ALE/Pong-v5'], default='CartPole-v1')
 parser.add_argument('--evaluate_freq', type=int, default=25,
                     help='How often to run evaluation.', nargs='?')
 parser.add_argument('--evaluation_episodes', type=int, default=5,
@@ -19,7 +22,8 @@ parser.add_argument('--evaluation_episodes', type=int, default=5,
 
 # Hyperparameter configurations for different environments. See config.py.
 ENV_CONFIGS = {
-    'CartPole-v1': config.CartPole
+    'CartPole-v1': config.CartPole,
+    'ALE/Pong-v5': config.Pong
 }
 
 if __name__ == '__main__':
@@ -27,6 +31,12 @@ if __name__ == '__main__':
 
     # Initialize environment and config.
     env = gym.make(args.env)
+
+    if args.env in ["ALE/Pong-v5"]:
+        env = AtariPreprocessing(
+            env, screen_size=84, grayscale_obs=True, frame_skip=1, noop_max=30)
+        env = FrameStack(env, 4)
+
     env_config = ENV_CONFIGS[args.env]
 
     # Initialize deep Q-networks.
@@ -53,16 +63,19 @@ if __name__ == '__main__':
         obs = preprocess(obs, env=args.env).unsqueeze(0)
 
         while not terminated:
-            # TODO: Get action from DQN.
+            # Get action from DQN.
+            # print(dqn.act(obs))
             action = dqn.act(obs).item()
             curr_obs = obs
 
+            # print(env.action_space)
             # Act in the true environment.
-            obs, reward, terminated, truncated, info = env.step(action)
+            obs, reward, terminated, truncated, info = env.step(action + 2)
 
             # Preprocess incoming observation.
             if not terminated:
-                obs = preprocess(obs, env=args.env).unsqueeze(0)
+                obs = preprocess(obs, env=args.env,
+                                 last_obss=curr_obs).unsqueeze(0)
             else:
                 obs = torch.zeros(obs.shape, device=device).unsqueeze(0)
 
