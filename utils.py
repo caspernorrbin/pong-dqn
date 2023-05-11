@@ -3,6 +3,8 @@ import torchvision.transforms as T
 import cv2
 import numpy as np
 
+from gymnasium.wrappers import LazyFrames
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -11,28 +13,15 @@ def preprocess(obs, env, last_obss=None):
     if env in ['CartPole-v1']:
         return torch.tensor(obs, device=device).float()
     elif env in ['ALE/Pong-v5']:
-        return torch.tensor(obs, device=device).float()
-        print(obs)
-        exit()
 
-        processed = np.where(obs[0] < 128, 0, 1)
+        # Bin all color values between 0-255 in all frames to be either 0 or 1
+        binned_frames = [np.where(frame < 128, 0, 1) for frame in obs]
+        obs = LazyFrames(binned_frames)
 
-        if last_obss is None:
-            obs = np.stack([obs, obs, obs, obs], axis=0)
-        else:
-            obs.append(processed)
-            obs.pop(0)
+        # Convert to a numpy array before creating a tensor (otherwise we get
+        # a warning because this is supposed to be really efficient)
+        obs = np.array(obs)
 
-        im = cv2.imwrite("test.png", obs[0])
-        print(obs[0][5])
-
-        print(np.where(obs[0] < 128, 0, 1))
-        obs[0] = obs[0]._force()
-        cv2.imwrite("test2.png", obs[0])
-
-        print(obs[0][5])
-
-        exit()
         return torch.tensor(obs, device=device).float()
     else:
         raise ValueError(
