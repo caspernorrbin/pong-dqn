@@ -1,6 +1,5 @@
 import torch
 import torchvision.transforms as T
-import cv2
 import numpy as np
 
 from gymnasium.wrappers import LazyFrames
@@ -15,8 +14,11 @@ def preprocess(obs, env, last_obss=None):
     elif env in ['ALE/Pong-v5']:
 
         # Bin all color values between 0-255 in all frames to be either 0 or 1
-        binned_frames = [np.where(frame < 128, 0, 1) for frame in obs]
-        obs = LazyFrames(binned_frames)
+        #binned_frames = [np.where(frame < 128, 0, 1) for frame in obs]
+        #obs = LazyFrames(binned_frames)
+        
+        normalized_frames = [frame / 255 for frame in obs]
+        obs = LazyFrames(normalized_frames)
 
         # Convert to a numpy array before creating a tensor (otherwise we get
         # a warning because this is supposed to be really efficient)

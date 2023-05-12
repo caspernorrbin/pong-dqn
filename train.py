@@ -10,6 +10,8 @@ from dqn import DQN, ReplayMemory, optimize
 
 from gymnasium.wrappers import AtariPreprocessing, FrameStack
 
+import matplotlib.pyplot as plt
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 parser = argparse.ArgumentParser()
@@ -55,6 +57,8 @@ if __name__ == '__main__':
 
     optimize_count = 0
     update_target_count = 0
+    
+    rewards = []
 
     for episode in range(env_config['n_episodes']):
         terminated = False
@@ -107,6 +111,16 @@ if __name__ == '__main__':
 
                 print('Best performance so far! Saving model.')
                 torch.save(dqn, f'models/{args.env}_best.pt')
+                
+            rewards.append(mean_return)
 
+    y = [1 + args.evaluate_freq * i for i in range(len(rewards))]
+    
+    plt.plot(y, rewards)
+    plt.xlabel("Episode")
+    plt.ylabel("Mean Return")
+    plt.title("Mean Return vs Episode")
+    plt.savefig("mean_return.png")
+    
     # Close environment after training is completed.
     env.close()
