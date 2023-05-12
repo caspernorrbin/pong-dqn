@@ -41,7 +41,15 @@ def evaluate_policy(dqn, env, env_config, args, n_episodes, render=False, verbos
                 env.render()
 
             action = dqn.act(obs, exploit=True).item()
-            obs, reward, terminated, truncated, info = env.step(action + 2)
+            
+            offset = 0
+            if args.env in ["ALE/Pong-v5"]:
+                if (action == 0):
+                    offset = 2
+                elif (action == 2):
+                    offset = 3
+            
+            obs, reward, terminated, truncated, info = env.step(action + offset)
             obs = preprocess(obs, env=args.env).unsqueeze(0)
 
             episode_return += reward
@@ -54,7 +62,7 @@ def evaluate_policy(dqn, env, env_config, args, n_episodes, render=False, verbos
     
     return total_return / n_episodes
 
-if __name__ == '__main__':
+def main():
     args = parser.parse_args()
 
     # Initialize environment and config
@@ -78,3 +86,8 @@ if __name__ == '__main__':
     print(f'The policy got a mean return of {mean_return} over {args.n_eval_episodes} episodes.')
 
     env.close()
+    
+
+if __name__ == '__main__':
+    main()
+    

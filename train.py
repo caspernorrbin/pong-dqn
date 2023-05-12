@@ -28,7 +28,7 @@ ENV_CONFIGS = {
     'ALE/Pong-v5': config.Pong
 }
 
-if __name__ == '__main__':
+def main():
     args = parser.parse_args()
 
     # Initialize environment and config.
@@ -71,10 +71,17 @@ if __name__ == '__main__':
             # print(dqn.act(obs))
             action = dqn.act(obs).item()
             curr_obs = obs
+            
+            offset = 0
+            if args.env in ["ALE/Pong-v5"]:
+                if (action == 0):
+                    offset = 2
+                elif (action == 2):
+                    offset = 3
 
             # print(env.action_space)
             # Act in the true environment.
-            obs, reward, terminated, truncated, info = env.step(action + 2)
+            obs, reward, terminated, truncated, info = env.step(action + offset)
 
             # Preprocess incoming observation.
             if not terminated:
@@ -124,3 +131,7 @@ if __name__ == '__main__':
     
     # Close environment after training is completed.
     env.close()
+
+if __name__ == '__main__':
+    main()
+    
