@@ -43,11 +43,16 @@ def evaluate_policy(dqn, env, env_config, args, n_episodes, render=False, verbos
             action = dqn.act(obs, exploit=True).item()
             
             offset = 0
-            if args.env in ["ALE/Pong-v5"]:
-                if (action == 0):
+            if env_config['env_name'] == "pong":
+                # 0 -> 2, up
+                # 1 -> 0, noop
+                # 2 -> 3, down
+                if action == 0:
                     offset = 2
-                elif (action == 2):
-                    offset = 3
+                elif action == 1:
+                    offset = -1
+                elif action == 2:
+                    offset = 1
             
             obs, reward, terminated, truncated, info = env.step(action + offset)
             obs = preprocess(obs, env=args.env).unsqueeze(0)
