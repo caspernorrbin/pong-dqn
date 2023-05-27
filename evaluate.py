@@ -47,7 +47,9 @@ def evaluate_policy(dqn, env, env_config, args, n_episodes, render=False, verbos
                 # 0 -> 2, up
                 # 1 -> 0, noop
                 # 2 -> 3, down
-                if action == 0:
+                if env_config["n_actions"] == 2:
+                    offset = 2
+                elif action == 0:
                     offset = 2
                 elif action == 1:
                     offset = -1

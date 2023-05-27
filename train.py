@@ -77,7 +77,9 @@ def main():
                 # 0 -> 2
                 # 1 -> 0
                 # 2 -> 3
-                if action == 0:
+                if env_config["n_actions"] == 2:
+                    offset = 2
+                elif action == 0:
                     offset = 2
                 elif action == 1:
                     offset = -1
