@@ -78,11 +78,11 @@ class DQN(nn.Module):
 
     def act(self, observation, exploit=False):
         """Selects an action with an epsilon-greedy exploration strategy."""
-        # Implement action selection using the Deep Q-network. This function
-        # takes an observation tensor and should return a tensor of actions.
+        # Takes an observation tensor and returns a tensor of actions.
         # For example, if the state dimension is 4 and the batch size is 32,
         # the input would be a [32, 4] tensor and the output a [32, 1] tensor.
-        # Implement epsilon-greedy exploration.
+        
+        # Epsilon-greedy exploration.
         if (not exploit) and (random.random() < self.current_eps):
             actions = torch.randint(
                 0, self.n_actions, (observation.shape[0], 1)).to(device)
@@ -101,8 +101,6 @@ def optimize(dqn, target_dqn, memory, optimizer):
 
     # Sample a batch from the replay memory and concatenate so that there are
     # four tensors in total: observations, actions, next observations and rewards.
-    # Remember to move them to GPU if it is available, e.g., by using Tensor.to(device).
-    # Note that special care is needed for terminal transitions!
     obss, actions, next_obss, rewards = memory.sample(dqn.batch_size)
 
     # Stack tensors
@@ -111,15 +109,7 @@ def optimize(dqn, target_dqn, memory, optimizer):
     next_obss = torch.stack(next_obss).to(device)
     rewards = torch.stack(rewards).to(device)
 
-    # Compute the current estimates of the Q-values for each state-action
-    # pair (s,a). Here, torch.gather() is useful for selecting the Q-values
-    # corresponding to the chosen actions.
-
-    # obss has shape [batch_size, 1, a_space], actions has shape [batch_size]
-    # actions.view instead has shape [batch_size, 1, 1]
-    # q_values = torch.gather(dqn.forward(
-    #     obss), 2, actions.view(-1, 1, 1)).squeeze(2).to(device)
-
+    # Compute the current estimates of the Q-values for each state-action pair (s,a).
     q_values = torch.zeros(dqn.batch_size, device=device)
     for obs, action, i in zip(obss, actions, range(dqn.batch_size)):
         q_value = dqn.forward(obs)

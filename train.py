@@ -68,17 +68,18 @@ def main():
 
         while not terminated:
             # Get action from DQN.
-            # print(dqn.act(obs))
             action = dqn.act(obs).item()
             curr_obs = obs
             
             offset = 0
             if env_config['env_name'] == "pong":
+                # Action mapping for 2 actions.
+                if env_config["n_actions"] == 2:
+                    offset = 2
+                # Action mapping for 3 actions.
                 # 0 -> 2
                 # 1 -> 0
                 # 2 -> 3
-                if env_config["n_actions"] == 2:
-                    offset = 2
                 elif action == 0:
                     offset = 2
                 elif action == 1:
@@ -86,7 +87,6 @@ def main():
                 elif action == 2:
                     offset = 1
 
-            # print(env.action_space)
             # Act in the true environment.
             obs, reward, terminated, truncated, info = env.step(action + offset)
 
@@ -97,8 +97,7 @@ def main():
             else:
                 obs = torch.zeros(obs.shape, device=device).unsqueeze(0)
 
-            # Add the transition to the replay memory. Remember to convert
-            # everything to PyTorch tensors!
+            # Add the transition to the replay memory.
             memory.push(curr_obs, torch.tensor(action, device=device),
                         obs, torch.tensor(reward, device=device))
 
